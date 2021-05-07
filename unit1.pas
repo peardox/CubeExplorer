@@ -24,9 +24,13 @@ type
 
   TForm1 = class(TForm)
     Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
     ListView1: TListView;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
+    Panel3: TPanel;
+    Panel4: TPanel;
     QuaterniusBuildingsMenu: TMenuItem;
     QuaterniusPropsMenu: TMenuItem;
     QuaterniusMenu: TMenuItem;
@@ -39,7 +43,10 @@ type
     Panel1: TPanel;
     Splitter1: TSplitter;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormResize(Sender: TObject);
     procedure QuaterniusBuildingsMenuClick(Sender: TObject);
     procedure QuaterniusPropsMenuClick(Sender: TObject);
     procedure YogYogMenuClick(Sender: TObject);
@@ -65,12 +72,14 @@ type
     Debug: TDebugTransformBox;
     infoNotifications: TCastleNotifications;
     gYAngle: Single;
+    gSceneRot: Integer;
   end;
 
 var
   Form1: TForm1;
 
 const
+  MaxSceneRot: Integer = 7;
   InfoFloatFormat: String = '#.######';
   QuaterniusBuildings: Array [0..9] of String = ('Bell_Tower.glb', 'Blacksmith.glb', 'House_1.glb', 'House_2.glb', 'House_3.glb', 'House_4.glb', 'Inn.glb', 'Mill.glb', 'Sawmill.glb', 'Stable.glb');
   QuaterniusProps: Array [0..33] of String = ('Bag.glb', 'Bag_Open.glb', 'Bags.glb', 'Barrel.glb', 'Bell.glb', 'Bench_1.glb', 'Bench_2.glb', 'Bonfire.glb', 'Bonfire_Lit.glb', 'Cart.glb', 'Cauldron.glb', 'Crate.glb', 'Door_Round.glb', 'Door_Straight.glb', 'Fence.glb', 'Gazebo.glb', 'Hay.glb', 'MarketStand_1.glb', 'MarketStand_2.glb', 'Package_1.glb', 'Package_2.glb', 'Path_Square.glb', 'Path_Straight.glb', 'Rock_1.glb', 'Rock_2.glb', 'Rock_3.glb', 'Sawmill_saw.glb', 'Smoke.glb', 'Stairs.glb', 'Well.glb', 'Window_1.glb', 'Window_2.glb', 'Window_3.glb', 'Window_4.glb');
@@ -152,7 +161,7 @@ begin
 
   Viewport := TCastleViewport.Create(Application);
   Viewport.FullSize := True;
-  Viewport.AutoCamera := True;
+  Viewport.AutoCamera := False;
 
   Viewport.Transparent := True;
   Viewport.NavigationType := ntNone;
@@ -235,6 +244,28 @@ begin
     end;
 end;
 
+procedure TForm1.Button2Click(Sender: TObject);
+begin
+  if not(Scene = nil) then
+    begin
+      Dec(gSceneRot);
+      if (gSceneRot < 0) then
+        gSceneRot := MaxSceneRot;
+      Scene.Rotation := Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1)));
+    end;
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+begin
+  if not(Scene = nil) then
+    begin
+      Inc(gSceneRot);
+      if (gSceneRot > MaxSceneRot) then
+        gSceneRot := 0;
+      Scene.Rotation := Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1)));
+    end;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 var
   AMenuItem: TMenuItem;
@@ -258,7 +289,15 @@ begin
     end;
   TrackBar1.Enabled := False;
   gYAngle := -1;
+  gSceneRot := 0;
   RadioGroup1.ItemIndex := 14;
+end;
+
+procedure TForm1.FormResize(Sender: TObject);
+begin
+  Panel4.Height := Button2.Height;
+  Button2.Width := Trunc(Panel4.Width / 2);
+  Button3.Width := Panel4.Width - Button2.Width;
 end;
 
 procedure TForm1.LoadMenuScene(const AFileName: String);
