@@ -2,7 +2,7 @@
 
 This is a Lazarus LCL project
 
-![tests/application.jpg]()
+![](tests/application.jpg)
 
 
 
