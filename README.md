@@ -2,6 +2,10 @@
 
 This is a Lazarus LCL project
 
+![tests/application.jpg]()
+
+
+
 # Notes
 
 The Cavalier, Cabinet and Military options are currently placeholders that do a (-1, -2, -1) viewpoint
