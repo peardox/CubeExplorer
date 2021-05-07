@@ -80,6 +80,7 @@ type
     infoNotifications: TCastleNotifications;
     gYAngle: Single;
     gSceneRot: Integer;
+    gUsingShear: Boolean;
   end;
 
 var
@@ -304,6 +305,7 @@ begin
     end;
   TrackBar1.Enabled := False;
   gYAngle := -1;
+  gUsingShear := False; // Placeholder - alter with shear when @michalis writes it
   gSceneRot := 0;
   RadioGroup1.ItemIndex := 14;
   KeyPreview := True;
@@ -411,6 +413,7 @@ end;
 
 procedure TForm1.RadioGroup1Click(Sender: TObject);
 begin
+  gUsingShear := False;
   if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Trackbar' then
     begin
     TrackBar1.Enabled := True;
@@ -419,14 +422,17 @@ begin
   else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Cavalier' then
     begin
     gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
+    gUsingShear := True;
     end
   else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Cabinet' then
     begin
     gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
+    gUsingShear := True;
     end
   else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Military' then
     begin
     gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
+    gUsingShear := True;
     end
   else
     begin
