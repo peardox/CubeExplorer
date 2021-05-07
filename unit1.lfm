@@ -20,7 +20,6 @@ object Form1: TForm1
     OnOpen = WindowOpen
     OnBeforeRender = WindowBeforeRender
     OnResize = WindowResize
-    OnUpdate = WindowUpdate
   end
   object Panel1: TPanel
     Left = 0
@@ -136,15 +135,24 @@ object Form1: TForm1
   object MainMenu1: TMainMenu
     Left = 186
     Top = 72
-    object MenuItem1: TMenuItem
+    object FileMenu: TMenuItem
       Caption = '&File'
-      object MenuItem2: TMenuItem
-        Caption = '&Load Inn'
-        OnClick = MenuItem2Click
+      object QuaterniusMenu: TMenuItem
+        Caption = '&Quaternius'
+        object QuaterniusBuildingsMenu: TMenuItem
+          Caption = 'Buildings'
+        end
+        object QuaterniusPropsMenu: TMenuItem
+          Caption = 'Props'
+        end
       end
-      object MenuItem3: TMenuItem
-        Caption = 'Load Yogyog &Castle'
-        OnClick = MenuItem3Click
+      object YogYogMenu: TMenuItem
+        Caption = 'Yogyog &Castle'
+        OnClick = YogYogMenuClick
+      end
+      object DebugBoxMenu: TMenuItem
+        Caption = '&DebugBox'
+        OnClick = DebugBoxMenuClick
       end
     end
   end

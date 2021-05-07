@@ -13,15 +13,25 @@ uses
   CastleNotifications, CastleUIControls, CastleFilesUtils;
 
 type
+  { TCastleSceneHelper }
+
+  TCastleSceneHelper = class helper for TCastleScene
+  public
+     procedure Normalize;
+  end;
+
   { TForm1 }
 
   TForm1 = class(TForm)
     Button1: TButton;
     ListView1: TListView;
     MainMenu1: TMainMenu;
-    MenuItem1: TMenuItem;
-    MenuItem2: TMenuItem;
-    MenuItem3: TMenuItem;
+    FileMenu: TMenuItem;
+    QuaterniusBuildingsMenu: TMenuItem;
+    QuaterniusPropsMenu: TMenuItem;
+    QuaterniusMenu: TMenuItem;
+    YogYogMenu: TMenuItem;
+    DebugBoxMenu: TMenuItem;
     Panel2: TPanel;
     RadioGroup1: TRadioGroup;
     TrackBar1: TTrackBar;
@@ -30,21 +40,25 @@ type
     Splitter1: TSplitter;
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure MenuItem2Click(Sender: TObject);
-    procedure MenuItem3Click(Sender: TObject);
+    procedure QuaterniusBuildingsMenuClick(Sender: TObject);
+    procedure QuaterniusPropsMenuClick(Sender: TObject);
+    procedure YogYogMenuClick(Sender: TObject);
+    procedure DebugBoxMenuClick(Sender: TObject);
     procedure RadioGroup1Click(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure WindowBeforeRender(Sender: TObject);
     procedure WindowOpen(Sender: TObject);
     procedure WindowResize(Sender: TObject);
-    procedure WindowUpdate(Sender: TObject);
   private
     procedure ViewFromRadius(const ARadius: Single; const ADirection: TVector3);
     procedure AddInfo(const AName: String; const AValue: Integer);
     procedure AddInfo(const AName: String; const AValue: Single);
+    procedure AddInfo(const AName: String; const AValue: String);
     procedure UpdateInfo(const AName: String; const AValue: Integer);
     procedure UpdateInfo(const AName: String; const AValue: Single);
+    procedure UpdateInfo(const AName: String; const AValue: String);
     function  CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
+    procedure LoadMenuScene(const AFileName: String);
   public
     Scene: TCastleScene;
     Viewport: TCastleViewport;
@@ -58,50 +72,77 @@ var
 
 const
   InfoFloatFormat: String = '#.######';
+  QuaterniusBuildings: Array [0..9] of String = ('Bell_Tower.glb', 'Blacksmith.glb', 'House_1.glb', 'House_2.glb', 'House_3.glb', 'House_4.glb', 'Inn.glb', 'Mill.glb', 'Sawmill.glb', 'Stable.glb');
+  QuaterniusProps: Array [0..33] of String = ('Bag.glb', 'Bag_Open.glb', 'Bags.glb', 'Barrel.glb', 'Bell.glb', 'Bench_1.glb', 'Bench_2.glb', 'Bonfire.glb', 'Bonfire_Lit.glb', 'Cart.glb', 'Cauldron.glb', 'Crate.glb', 'Door_Round.glb', 'Door_Straight.glb', 'Fence.glb', 'Gazebo.glb', 'Hay.glb', 'MarketStand_1.glb', 'MarketStand_2.glb', 'Package_1.glb', 'Package_2.glb', 'Path_Square.glb', 'Path_Straight.glb', 'Rock_1.glb', 'Rock_2.glb', 'Rock_3.glb', 'Sawmill_saw.glb', 'Smoke.glb', 'Stairs.glb', 'Well.glb', 'Window_1.glb', 'Window_2.glb', 'Window_3.glb', 'Window_4.glb');
 
 implementation
 
 {$R *.lfm}
 
-{ TForm1 }
+{ TCastleSceneHelper }
 
-procedure TForm1.AddInfo(const AName: String; const AValue: Integer);
-var
-  vNewItem: TListItem;
+{
+  Normalize - Center the model in a 1x1x1 cube
+}
+procedure TCastleSceneHelper.Normalize;
 begin
-  vNewItem := ListView1.Items.Add;
-  vNewItem.Caption := AName;
-  vNewItem.SubItems.Add(IntToStr(AValue));
-end;
-
-procedure TForm1.AddInfo(const AName: String; const AValue: Single);
-var
-  vNewItem: TListItem;
-begin
-  vNewItem := ListView1.Items.Add;
-  vNewItem.Caption := AName;
-  vNewItem.SubItems.Add(FormatFloat(InfoFloatFormat, AValue));
-end;
-
-procedure TForm1.UpdateInfo(const AName: String; const AValue: Integer);
-var
-  idx: Integer;
-begin
-  for idx := 0 to ListView1.Items.Count -1 do
+  if not(RootNode = nil) then
     begin
-      if ListView1.Items[idx].Caption = AName then
-        ListView1.Items[idx].SubItems[0] := IntToStr(AValue);
+    if not BoundingBox.IsEmptyOrZero then
+      begin
+        if BoundingBox.MaxSize > 0 then
+          begin
+            Center := Vector3(Min(BoundingBox.Data[0].X, BoundingBox.Data[1].X) + (BoundingBox.SizeX / 2),
+                              Min(BoundingBox.Data[0].Y, BoundingBox.Data[1].Y) + (BoundingBox.SizeY / 2),
+                              Min(BoundingBox.Data[0].Z, BoundingBox.Data[1].Z) + (BoundingBox.SizeZ / 2));
+            Scale := Vector3(1 / BoundingBox.MaxSize,
+                             1 / BoundingBox.MaxSize,
+                             1 / BoundingBox.MaxSize);
+            Translation := -Center;
+          end;
+      end;
     end;
 end;
 
+{ TForm1 }
+
+procedure TForm1.AddInfo(const AName: String; const AValue: Integer);
+begin
+  AddInfo(AName, IntToStr(AValue));
+end;
+
+procedure TForm1.AddInfo(const AName: String; const AValue: Single);
+begin
+  AddInfo(AName, FormatFloat(InfoFloatFormat, AValue));
+end;
+
+procedure TForm1.AddInfo(const AName: String; const AValue: String);
+var
+  vNewItem: TListItem;
+begin
+  vNewItem := ListView1.Items.Add;
+  vNewItem.Caption := AName;
+  vNewItem.SubItems.Add(AValue);
+end;
+
+procedure TForm1.UpdateInfo(const AName: String; const AValue: Integer);
+begin
+  UpdateInfo(AName, IntToStr(AValue));
+end;
+
 procedure TForm1.UpdateInfo(const AName: String; const AValue: Single);
+begin
+  UpdateInfo(AName, FormatFloat(InfoFloatFormat, AValue));
+end;
+
+procedure TForm1.UpdateInfo(const AName: String; const AValue: String);
 var
   idx: Integer;
 begin
   for idx := 0 to ListView1.Items.Count -1 do
     begin
       if ListView1.Items[idx].Caption = AName then
-        ListView1.Items[idx].SubItems[0] := FormatFloat(InfoFloatFormat, AValue);
+        ListView1.Items[idx].SubItems[0] := AValue;
     end;
 end;
 
@@ -116,19 +157,21 @@ begin
   Viewport.Transparent := True;
   Viewport.NavigationType := ntNone;
   Viewport.AssignDefaultCamera;
-  Viewport.Camera.Orthographic.Width := 4;
-  Viewport.Camera.Orthographic.Height := 4;
+  Viewport.Camera.Orthographic.Width := 2;
+  Viewport.Camera.Orthographic.Height := 2;
   Viewport.Camera.Orthographic.Origin := Vector2(0.5, 0.5);
   Viewport.Camera.Orthographic.Scale := Viewport.Camera.Orthographic.Height / Viewport.Camera.Orthographic.Width;
   Viewport.Camera.ProjectionType := ptOrthographic;
 
   Scene := TCastleScene.Create(Application);
   Scene.PrimitiveGeometry := pgBox;
+  Scene.Normalize;
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
   Debug.BoxColor := Vector4(0,1,0, 1);
   Debug.Exists := True;
+  DebugBoxMenu.Checked := Debug.Exists;
 
   Viewport.Items.Add(Scene);
   Viewport.Items.MainScene := Scene;
@@ -146,6 +189,12 @@ begin
   AddInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
   AddInfo('Ortho Height', Viewport.Camera.Orthographic.Height);
   AddInfo('Ortho Scale', Viewport.Camera.Orthographic.Scale);
+
+  AddInfo('BBox 0', Scene.BoundingBox.Data[0].ToString);
+  AddInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
+  AddInfo('Translation', Scene.Translation.ToString);
+  AddInfo('Center', Scene.Center.ToString);
+  AddInfo('Scale', Scene.Scale.ToString);
 end;
 
 procedure TForm1.WindowResize(Sender: TObject);
@@ -157,11 +206,6 @@ begin
   UpdateInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
   UpdateInfo('Ortho Height', Viewport.Camera.Orthographic.Height);
   UpdateInfo('Ortho Scale', Viewport.Camera.Orthographic.Scale);
-end;
-
-procedure TForm1.WindowUpdate(Sender: TObject);
-begin
-
 end;
 
 procedure TForm1.WindowBeforeRender(Sender: TObject);
@@ -191,52 +235,82 @@ begin
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
+var
+  AMenuItem: TMenuItem;
+  Idx: Integer;
 begin
+  for Idx := 0 to Length(QuaterniusBuildings) - 1 do
+    begin
+      AMenuItem:=TMenuItem.Create(QuaterniusBuildingsMenu);
+      AMenuItem.Caption:=QuaterniusBuildings[Idx];
+      AMenuItem.Tag := Idx;
+      AMenuItem.OnClick := @QuaterniusBuildingsMenuClick;
+      QuaterniusBuildingsMenu.Add(AMenuItem);
+    end;
+  for Idx := 0 to Length(QuaterniusProps) - 1 do
+    begin
+      AMenuItem:=TMenuItem.Create(QuaterniusPropsMenu);
+      AMenuItem.Caption:=QuaterniusProps[Idx];
+      AMenuItem.Tag := Idx;
+      AMenuItem.OnClick := @QuaterniusPropsMenuClick;
+      QuaterniusPropsMenu.Add(AMenuItem);
+    end;
   TrackBar1.Enabled := False;
   gYAngle := -1;
   RadioGroup1.ItemIndex := 14;
 end;
 
-procedure TForm1.MenuItem2Click(Sender: TObject);
+procedure TForm1.LoadMenuScene(const AFileName: String);
+var
+  OldDebug: Boolean;
 begin
   if not (Scene = nil) then
     begin
+      OldDebug := Debug.Exists;
       FreeAndNil(Debug);
       FreeAndNil(Scene);
     end;
   Scene := TCastleScene.Create(Application);
-  Scene.Load('castle-data:/Medieval_Village_Pack/Buildings/gltf/Inn.glb');
-  Scene.Scale := Vector3(2/3.5, 2/3.5, 2/3.5); // Hacky unmeasured test
-  Scene.Translation := Vector3(0, -1, 0); // Hacky unmeasured test
+  Scene.Load(AFileName);
+  Scene.Normalize;
+
+  UpdateInfo('BBox 0', Scene.BoundingBox.Data[0].ToString);
+  UpdateInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
+  UpdateInfo('Translation', Scene.Translation.ToString);
+  UpdateInfo('Center', Scene.Center.ToString);
+  UpdateInfo('Scale', Scene.Scale.ToString);
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
   Debug.BoxColor := Vector4(0,1,0, 1);
-//  Debug.Exists := True;
+  Debug.Exists := OldDebug;
+  DebugBoxMenu.Checked := Debug.Exists;
 
   Viewport.Items.Add(Scene);
   Viewport.Items.MainScene := Scene;
 end;
 
-procedure TForm1.MenuItem3Click(Sender: TObject);
+procedure TForm1.QuaterniusBuildingsMenuClick(Sender: TObject);
 begin
-  if not (Scene = nil) then
-    begin
-      FreeAndNil(Debug);
-      FreeAndNil(Scene);
-    end;
-  Scene := TCastleScene.Create(Application);
-  Scene.Load('castle-data:/oblique.glb');
-  Scene.Scale := Vector3(1/0.8, 1/0.8, 1/0.8); // Hacky unmeasured test
-//  Scene.Translation := Vector3(0, -1, 0); // Hacky unmeasured test
+  LoadMenuScene('castle-data:/Medieval_Village_Pack/Buildings/gltf/' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)]);
+  Caption := 'Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
+end;
 
-  Debug := TDebugTransformBox.Create(Application);
-  Debug.Parent := Scene;
-  Debug.BoxColor := Vector4(0,1,0, 1);
-//  Debug.Exists := True;
+procedure TForm1.QuaterniusPropsMenuClick(Sender: TObject);
+begin
+  LoadMenuScene('castle-data:/Medieval_Village_Pack/Props/gltf/' + QuaterniusProps[Integer(TComponent(Sender).Tag)]);
+  Caption := 'Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
+end;
 
-  Viewport.Items.Add(Scene);
-  Viewport.Items.MainScene := Scene;
+procedure TForm1.YogYogMenuClick(Sender: TObject);
+begin
+  LoadMenuScene('castle-data:/oblique.glb');
+end;
+
+procedure TForm1.DebugBoxMenuClick(Sender: TObject);
+begin
+  Debug.Exists := not Debug.Exists;
+  DebugBoxMenu.Checked := Debug.Exists;
 end;
 
 procedure TForm1.RadioGroup1Click(Sender: TObject);
