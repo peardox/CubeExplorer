@@ -21,6 +21,7 @@ type
     MainMenu1: TMainMenu;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
     Panel2: TPanel;
     RadioGroup1: TRadioGroup;
     TrackBar1: TTrackBar;
@@ -30,6 +31,7 @@ type
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MenuItem2Click(Sender: TObject);
+    procedure MenuItem3Click(Sender: TObject);
     procedure RadioGroup1Click(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure WindowBeforeRender(Sender: TObject);
@@ -206,6 +208,27 @@ begin
   Scene.Load('castle-data:/Medieval_Village_Pack/Buildings/gltf/Inn.glb');
   Scene.Scale := Vector3(2/3.5, 2/3.5, 2/3.5); // Hacky unmeasured test
   Scene.Translation := Vector3(0, -1, 0); // Hacky unmeasured test
+
+  Debug := TDebugTransformBox.Create(Application);
+  Debug.Parent := Scene;
+  Debug.BoxColor := Vector4(0,1,0, 1);
+//  Debug.Exists := True;
+
+  Viewport.Items.Add(Scene);
+  Viewport.Items.MainScene := Scene;
+end;
+
+procedure TForm1.MenuItem3Click(Sender: TObject);
+begin
+  if not (Scene = nil) then
+    begin
+      FreeAndNil(Debug);
+      FreeAndNil(Scene);
+    end;
+  Scene := TCastleScene.Create(Application);
+  Scene.Load('castle-data:/oblique.glb');
+  Scene.Scale := Vector3(1/0.8, 1/0.8, 1/0.8); // Hacky unmeasured test
+//  Scene.Translation := Vector3(0, -1, 0); // Hacky unmeasured test
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
