@@ -3,7 +3,7 @@ object Form1: TForm1
   Height = 500
   Top = 245
   Width = 805
-  Caption = 'Form1'
+  Caption = 'CubeExplorer'
   ClientHeight = 480
   ClientWidth = 805
   Menu = MainMenu1
@@ -95,8 +95,8 @@ object Form1: TForm1
           'PI / 4'
           'PI / 5'
           'PI / 6'
-          'Root2'
-          'Golden'
+          'Cavalier'
+          'Cabinet'
           'Military'
           'Trackbar'
         )

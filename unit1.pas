@@ -166,6 +166,7 @@ begin
   Scene := TCastleScene.Create(Application);
   Scene.PrimitiveGeometry := pgBox;
   Scene.Normalize;
+  Caption := 'CubeExplorer : Default Cube';
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
@@ -212,7 +213,7 @@ procedure TForm1.WindowBeforeRender(Sender: TObject);
 begin
   if not(Scene = nil) then
     begin
-      ViewFromRadius(4, Vector3(-1, gYAngle, -1));
+      ViewFromRadius(2, Vector3(-1, gYAngle, -1));
     end;
 end;
 
@@ -293,18 +294,19 @@ end;
 procedure TForm1.QuaterniusBuildingsMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/Medieval_Village_Pack/Buildings/gltf/' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)]);
-  Caption := 'Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
+  Caption := 'CubeExplorer : Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
 end;
 
 procedure TForm1.QuaterniusPropsMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/Medieval_Village_Pack/Props/gltf/' + QuaterniusProps[Integer(TComponent(Sender).Tag)]);
-  Caption := 'Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
+  Caption := 'CubeExplorer : Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
 end;
 
 procedure TForm1.YogYogMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/oblique.glb');
+  Caption := 'CubeExplorer : Yogyog Castle';
 end;
 
 procedure TForm1.DebugBoxMenuClick(Sender: TObject);
@@ -320,9 +322,17 @@ begin
     TrackBar1.Enabled := True;
     gYAngle := -Pi * (TrackBar1.Position / TrackBar1.Max);
     end
+  else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Cavalier' then
+    begin
+    gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
+    end
+  else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Cabinet' then
+    begin
+    gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
+    end
   else if RadioGroup1.Items[RadioGroup1.ItemIndex] = 'Military' then
     begin
-    gYAngle := -2;
+    gYAngle := -2; // Placeholder - alter with shear when @michalis writes it
     end
   else
     begin
@@ -340,8 +350,6 @@ begin
          9: gYAngle := -Pi / 4;
         10: gYAngle := -Pi / 5;
         11: gYAngle := -Pi / 6;
-        12: gYAngle := -Sqrt(2);
-        13: gYAngle := -((1 + Sqrt(5)) / 2);
       end;
     end;
 
