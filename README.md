@@ -1,12 +1,11 @@
 # CubeExplorer
 
-This is a Lazarus LCL project
+This is a Lazarus LCL + CGE project
 
 ![](tests/application.jpg)
 
-
-
 # Notes
+Requires Castle Game Engine (UnStable) - https://castle-engine.io/
 
 The Cavalier, Cabinet and Military options are currently placeholders that do a (-1, -2, -1) viewpoint
 
