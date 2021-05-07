@@ -10,7 +10,7 @@ uses
   CastleViewport, CastleSceneCore, CastleScene, CastleProjection,
   CastleRenderOptions, CastleCameras, CastleVectors, CastleDebugTransform,
   CastleControls, CastleImages, CastleGLImages, CastleColors, CastleRectangles,
-  CastleNotifications, CastleUIControls, CastleFilesUtils;
+  CastleNotifications, CastleUIControls, CastleFilesUtils, CastleLCLUtils, CastleKeysMouse;
 
 type
   { TCastleSceneHelper }
@@ -29,6 +29,8 @@ type
     ListView1: TListView;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
+    MedievalFantasyBookMenu: TMenuItem;
+    NavigationMenu: TMenuItem;
     Panel3: TPanel;
     Panel4: TPanel;
     QuaterniusBuildingsMenu: TMenuItem;
@@ -47,8 +49,12 @@ type
     procedure Button3Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
+    procedure MedievalFantasyBookMenuClick(Sender: TObject);
+    procedure NavigationMenuClick(Sender: TObject);
     procedure QuaterniusBuildingsMenuClick(Sender: TObject);
     procedure QuaterniusPropsMenuClick(Sender: TObject);
+    procedure WindowMotion(Sender: TObject; const Event: TInputMotion);
+    procedure WindowPress(Sender: TObject; const Event: TInputPressRelease);
     procedure YogYogMenuClick(Sender: TObject);
     procedure DebugBoxMenuClick(Sender: TObject);
     procedure RadioGroup1Click(Sender: TObject);
@@ -66,6 +72,7 @@ type
     procedure UpdateInfo(const AName: String; const AValue: String);
     function  CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
     procedure LoadMenuScene(const AFileName: String);
+    procedure UpdateInfoPanel;
   public
     Scene: TCastleScene;
     Viewport: TCastleViewport;
@@ -162,7 +169,7 @@ begin
   Viewport := TCastleViewport.Create(Application);
   Viewport.FullSize := True;
   Viewport.AutoCamera := False;
-
+  Viewport.Setup2D;
   Viewport.Transparent := True;
   Viewport.NavigationType := ntNone;
   Viewport.AssignDefaultCamera;
@@ -173,6 +180,9 @@ begin
   Viewport.Camera.ProjectionType := ptOrthographic;
 
   Scene := TCastleScene.Create(Application);
+  Scene.Setup2D;
+  Scene.RenderOptions.MinificationFilter := minNearest;
+  Scene.RenderOptions.MagnificationFilter := magNearest;
   Scene.PrimitiveGeometry := pgBox;
   Scene.Normalize;
   Caption := 'CubeExplorer : Default Cube';
@@ -204,10 +214,10 @@ begin
   AddInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
   AddInfo('Translation', Scene.Translation.ToString);
   AddInfo('Center', Scene.Center.ToString);
-  AddInfo('Scale', Scene.Scale.ToString);
+  AddInfo('3D Scale', Scene.Scale.ToString);
 end;
 
-procedure TForm1.WindowResize(Sender: TObject);
+procedure TForm1.UpdateInfoPanel;
 begin
   Viewport.Camera.Orthographic.Scale := Viewport.Camera.Orthographic.Height / Viewport.Camera.Orthographic.Width;
 
@@ -216,6 +226,11 @@ begin
   UpdateInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
   UpdateInfo('Ortho Height', Viewport.Camera.Orthographic.Height);
   UpdateInfo('Ortho Scale', Viewport.Camera.Orthographic.Scale);
+  UpdateInfo('BBox 0', Scene.BoundingBox.Data[0].ToString);
+  UpdateInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
+  UpdateInfo('Translation', Scene.Translation.ToString);
+  UpdateInfo('Center', Scene.Center.ToString);
+  UpdateInfo('3D Scale', Scene.Scale.ToString);
 end;
 
 procedure TForm1.WindowBeforeRender(Sender: TObject);
@@ -291,6 +306,7 @@ begin
   gYAngle := -1;
   gSceneRot := 0;
   RadioGroup1.ItemIndex := 14;
+  KeyPreview := True;
 end;
 
 procedure TForm1.FormResize(Sender: TObject);
@@ -311,6 +327,9 @@ begin
       FreeAndNil(Scene);
     end;
   Scene := TCastleScene.Create(Application);
+  Scene.Setup2D;
+  Scene.RenderOptions.MinificationFilter := minNearest;
+  Scene.RenderOptions.MagnificationFilter := magNearest;
   Scene.Load(AFileName);
   Scene.Normalize;
 
@@ -318,7 +337,7 @@ begin
   UpdateInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
   UpdateInfo('Translation', Scene.Translation.ToString);
   UpdateInfo('Center', Scene.Center.ToString);
-  UpdateInfo('Scale', Scene.Scale.ToString);
+  UpdateInfo('3D Scale', Scene.Scale.ToString);
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
@@ -342,10 +361,46 @@ begin
   Caption := 'CubeExplorer : Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
 end;
 
+procedure TForm1.WindowResize(Sender: TObject);
+begin
+  UpdateInfoPanel;
+end;
+
+procedure TForm1.WindowMotion(Sender: TObject; const Event: TInputMotion);
+begin
+  UpdateInfoPanel;
+end;
+
+procedure TForm1.WindowPress(Sender: TObject; const Event: TInputPressRelease);
+begin
+  UpdateInfoPanel;
+end;
+
 procedure TForm1.YogYogMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/oblique.glb');
   Caption := 'CubeExplorer : Yogyog Castle';
+end;
+
+procedure TForm1.MedievalFantasyBookMenuClick(Sender: TObject);
+begin
+  LoadMenuScene('castle-data:/medieval_fantasy_book/scene.gltf');
+  Caption := 'CubeExplorer : Medieval Fantasy Book';
+end;
+
+procedure TForm1.NavigationMenuClick(Sender: TObject);
+begin
+  if Viewport.NavigationType = ntNone then
+    begin
+      Viewport.NavigationType := ntExamine;
+      NavigationMenu.Checked := True;
+    end
+  else
+    begin
+      Viewport.NavigationType := ntNone;
+      NavigationMenu.Checked := False;
+    end;
+
 end;
 
 procedure TForm1.DebugBoxMenuClick(Sender: TObject);

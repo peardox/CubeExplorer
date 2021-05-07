@@ -39,6 +39,7 @@ object Form1: TForm1
           Width = 140
         end>
       ScrollBars = ssNone
+      TabStop = False
       TabOrder = 0
       ViewStyle = vsReport
     end
@@ -100,6 +101,7 @@ object Form1: TForm1
         Max = 3600
         OnChange = TrackBar1Change
         Position = 90
+        TabStop = False
         Align = alBottom
         TabOrder = 1
       end
@@ -112,6 +114,7 @@ object Form1: TForm1
         Caption = 'Save Image To File'
         OnClick = Button1Click
         TabOrder = 2
+        TabStop = False
       end
     end
   end
@@ -143,6 +146,8 @@ object Form1: TForm1
       OnOpen = WindowOpen
       OnBeforeRender = WindowBeforeRender
       OnResize = WindowResize
+      OnPress = WindowPress
+      OnMotion = WindowMotion
     end
     object Panel4: TPanel
       Left = 0
@@ -163,6 +168,7 @@ object Form1: TForm1
         Caption = 'Rotate  Left'
         OnClick = Button2Click
         TabOrder = 0
+        TabStop = False
       end
       object Button3: TButton
         Left = 424
@@ -173,6 +179,7 @@ object Form1: TForm1
         Caption = 'Rotate  Right'
         OnClick = Button3Click
         TabOrder = 1
+        TabStop = False
       end
     end
   end
@@ -190,6 +197,10 @@ object Form1: TForm1
           Caption = 'Props'
         end
       end
+      object MedievalFantasyBookMenu: TMenuItem
+        Caption = 'Medieval Fantasy Book'
+        OnClick = MedievalFantasyBookMenuClick
+      end
       object YogYogMenu: TMenuItem
         Caption = 'Yogyog &Castle'
         OnClick = YogYogMenuClick
@@ -197,6 +208,10 @@ object Form1: TForm1
       object DebugBoxMenu: TMenuItem
         Caption = '&DebugBox'
         OnClick = DebugBoxMenuClick
+      end
+      object NavigationMenu: TMenuItem
+        Caption = 'Navigation'
+        OnClick = NavigationMenuClick
       end
     end
   end
