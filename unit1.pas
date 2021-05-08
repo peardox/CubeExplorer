@@ -10,7 +10,8 @@ uses
   CastleViewport, CastleSceneCore, CastleScene, CastleProjection,
   CastleRenderOptions, CastleCameras, CastleVectors, CastleDebugTransform,
   CastleControls, CastleImages, CastleGLImages, CastleColors, CastleRectangles,
-  CastleNotifications, CastleUIControls, CastleFilesUtils, CastleLCLUtils, CastleKeysMouse;
+  CastleNotifications, CastleUIControls, CastleFilesUtils, CastleLCLUtils,
+  CastleGLUtils, CastleKeysMouse;
 
 type
   { TCastleSceneHelper }
@@ -26,6 +27,7 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    ComboBox1: TComboBox;
     ListView1: TListView;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
@@ -47,6 +49,7 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure ComboBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure MedievalFantasyBookMenuClick(Sender: TObject);
@@ -70,7 +73,8 @@ type
     procedure UpdateInfo(const AName: String; const AValue: Integer);
     procedure UpdateInfo(const AName: String; const AValue: Single);
     procedure UpdateInfo(const AName: String; const AValue: String);
-    function  CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
+//    function  CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
+    function  CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
     procedure LoadMenuScene(const AFileName: String);
     procedure UpdateInfoPanel;
   public
@@ -81,6 +85,7 @@ type
     gYAngle: Single;
     gSceneRot: Integer;
     gUsingShear: Boolean;
+    SpriteSize: Integer;
   end;
 
 var
@@ -164,6 +169,8 @@ begin
 end;
 
 procedure TForm1.WindowOpen(Sender: TObject);
+var
+  ASize: Integer;
 begin
   TrackBar1.Position := 90;
 
@@ -204,6 +211,9 @@ begin
   infoNotifications.Anchor(vpBottom, 10);
   Window.Controls.InsertFront(infoNotifications);
 
+  SpriteSize := 1024;
+
+  AddInfo('Sprite Size', Integer(SpriteSize));
   AddInfo('Window Width', Window.Width);
   AddInfo('Window Height', Window.Height);
   AddInfo('Projection (Y Axis)', gYAngle);
@@ -216,6 +226,17 @@ begin
   AddInfo('Translation', Scene.Translation.ToString);
   AddInfo('Center', Scene.Center.ToString);
   AddInfo('3D Scale', Scene.Scale.ToString);
+
+  ComboBox1.Items.Clear;
+  ASize := 32;
+  while ASize <= GLFeatures.MaxRenderbufferSize do
+    begin
+      ComboBox1.Items.Add('Sprite Size : ' + IntToStr(ASize) + ' x ' + IntToStr(ASize));
+      ASize *= 2;
+    end;
+
+  ComboBox1.ItemIndex := 5;
+
 end;
 
 procedure TForm1.UpdateInfoPanel;
@@ -238,7 +259,7 @@ procedure TForm1.WindowBeforeRender(Sender: TObject);
 begin
   if not(Scene = nil) then
     begin
-      ViewFromRadius(2, Vector3(-1, gYAngle, -1));
+      ViewFromRadius(Sqrt(2), Vector3(-1, gYAngle, -1));
     end;
 end;
 
@@ -249,10 +270,10 @@ var
 begin
   if not (Scene = nil) then
     begin
-      Sprite := CreateSpriteTexture(Scene, 1536, 1536);
+      Sprite := CreateSpriteImage(Scene, SpriteSize, SpriteSize);
       if not(Sprite = nil) then
         begin
-          SName := FileNameAutoInc('grab_%4.4d.png');
+          SName := FileNameAutoInc('grab_%4.4d.jpg');
           SaveImage(Sprite, SName);
           infoNotifications.Show('Saved : ' + SName);
           FreeAndNil(Sprite);
@@ -280,6 +301,12 @@ begin
         gSceneRot := 0;
       Scene.Rotation := Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1)));
     end;
+end;
+
+procedure TForm1.ComboBox1Change(Sender: TObject);
+begin
+  SpriteSize := Trunc(Power(2, ComboBox1.ItemIndex + 5));
+  UpdateInfo('Sprite Size', SpriteSize);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -479,6 +506,7 @@ begin
     end;
 end;
 
+{
 function TForm1.CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
 var
   SourceViewport: TCastleViewport;
@@ -492,41 +520,116 @@ begin
   if not(Scene = nil) and (TextureWidth > 0) and (TextureHeight > 0) then
     begin
       try
-        GrabScene := SourceScene.Clone(nil);
+        try
+          GrabScene := SourceScene.Clone(nil);
 
-        SourceViewport := TCastleViewport.Create(nil);
-        SourceViewport.Width := TextureWidth;
-        SourceViewport.Height := TextureHeight;
-        SourceViewport.BackgroundColor := Vector4(1,1,1,1);
+          SourceViewport := TCastleViewport.Create(nil);
+          SourceViewport.Width := TextureWidth;
+          SourceViewport.Height := TextureHeight;
+          SourceViewport.BackgroundColor := Vector4(1,1,1,1);
 
-        SourceViewport.Setup2D;
-        SourceViewport.Camera.ProjectionType := ptOrthographic;
-        SourceViewport.Camera.Orthographic.Origin := Viewport.Camera.Orthographic.Origin;
-        SourceViewport.Camera.Up := Viewport.Camera.Up;
-        SourceViewport.Camera.Direction := Viewport.Camera.Direction;
-        SourceViewport.Camera.Position  := Viewport.Camera.Position;
-        SourceViewport.Camera.Orthographic.Scale := Min(
-          Viewport.Camera.Orthographic.EffectiveWidth / TextureWidth,
-          Viewport.Camera.Orthographic.EffectiveHeight / TextureHeight);
+          SourceViewport.Setup2D;
+          SourceViewport.Camera.ProjectionType := ptOrthographic;
+          SourceViewport.Camera.Orthographic.Origin := Viewport.Camera.Orthographic.Origin;
+          SourceViewport.Camera.Up := Viewport.Camera.Up;
+          SourceViewport.Camera.Direction := Viewport.Camera.Direction;
+          SourceViewport.Camera.Position  := Viewport.Camera.Position;
+          SourceViewport.Camera.Orthographic.Scale := Min(
+            Viewport.Camera.Orthographic.EffectiveWidth / TextureWidth,
+            Viewport.Camera.Orthographic.EffectiveHeight / TextureHeight);
 
-        SourceViewport.Items := ViewPort.Items;
+          SourceViewport.Items := ViewPort.Items;
 
-        RenderToTexture := TGLRenderToTexture.Create(TextureWidth, TextureHeight);
-        RenderToTexture.Buffer := tbNone;
-        RenderToTexture.GLContextOpen;
-        RenderToTexture.RenderBegin;
+          RenderToTexture := TGLRenderToTexture.Create(TextureWidth, TextureHeight);
+          RenderToTexture.Buffer := tbNone;
+          RenderToTexture.GLContextOpen;
+          RenderToTexture.RenderBegin;
 
-        ViewportRect := Rectangle(0, 0, TextureWidth, TextureHeight);
+          ViewportRect := Rectangle(0, 0, TextureWidth, TextureHeight);
 
-        Window.Container.RenderControl(SourceViewport, ViewportRect);
+          Window.Container.RenderControl(SourceViewport, ViewportRect);
 
-        Result := SaveScreen_NoFlush(TRGBImage, ViewportRect, RenderToTexture.ColorBuffer);
+          Result := SaveScreen_NoFlush(TRGBImage, ViewportRect, RenderToTexture.ColorBuffer);
 
-        RenderToTexture.RenderEnd;
+          RenderToTexture.RenderEnd;
+        except
+          on E : Exception do
+            begin
+              ShowMessage(E.ClassName + LineEnding + E.Message);
+            end;
+        end;
       finally
         FreeAndNil(RenderToTexture);
         FreeAndNil(GrabScene);
         FreeAndNil(SourceViewport);
+      end;
+    end;
+end;
+}
+
+function TForm1.CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
+var
+  SourceViewport: TCastleViewport;
+  GrabScene: TCastleScene;
+  ViewportRect: TRectangle;
+  Image: TDrawableImage;
+begin
+  SourceViewport := nil;
+
+  if not(Scene = nil) and (TextureWidth > 0) and (TextureHeight > 0) then
+    begin
+      try
+        try
+          Image := TDrawableImage.Create(TRGBAlphaImage.Create(TextureWidth, TextureHeight), true, true);
+          Image.RenderToImageBegin;
+
+          GrabScene := SourceScene.Clone(nil);
+
+          SourceViewport := TCastleViewport.Create(nil);
+          SourceViewport.Width := TextureWidth;
+          SourceViewport.Height := TextureHeight;
+          SourceViewport.BackgroundColor := Vector4(1,1,1,1);
+
+          SourceViewport.Setup2D;
+          SourceViewport.Camera.ProjectionType := ptOrthographic;
+          SourceViewport.Camera.Orthographic.Origin := Viewport.Camera.Orthographic.Origin;
+          SourceViewport.Camera.Up := Viewport.Camera.Up;
+          SourceViewport.Camera.Direction := Viewport.Camera.Direction;
+          SourceViewport.Camera.Position  := Viewport.Camera.Position;
+          SourceViewport.Camera.Orthographic.Scale := Min(
+            Viewport.Camera.Orthographic.EffectiveWidth / TextureWidth,
+            Viewport.Camera.Orthographic.EffectiveHeight / TextureHeight);
+
+          SourceViewport.Camera.Orthographic.Scale := SourceViewport.Camera.Orthographic.Scale / 1.6;
+
+          SourceViewport.Items := ViewPort.Items;
+          ViewportRect := Rectangle(0, 0, TextureWidth, TextureHeight);
+          Window.Container.RenderControl(SourceViewport,ViewportRect);
+
+          Image.RenderToImageEnd;
+
+          if not False { Application.OpenGLES } then
+          begin
+            try
+              Result := Image.GetContents(TRGBAlphaImage);
+            except
+              on E : Exception do
+                begin
+                  ShowMessage(E.ClassName + LineEnding + E.Message);
+                end;
+            end;
+          end;
+
+        except
+          on E : Exception do
+            begin
+              ShowMessage(E.ClassName + LineEnding + E.Message);
+            end;
+        end;
+      finally
+        FreeAndNil(GrabScene);
+        FreeAndNil(SourceViewport);
+        FreeAndNil(Image);
       end;
     end;
 end;
