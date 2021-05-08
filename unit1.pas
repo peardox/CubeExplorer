@@ -191,7 +191,7 @@ begin
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
   Debug.BoxColor := Vector4(0,1,0, 1);
-  Debug.Exists := True;
+  Debug.Exists := False;
   DebugBoxMenu.Checked := Debug.Exists;
 
   Viewport.Items.Add(Scene);
