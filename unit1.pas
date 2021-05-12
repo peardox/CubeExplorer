@@ -32,7 +32,9 @@ type
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
     MedievalFantasyBookMenu: TMenuItem;
+    LoadFileMenu: TMenuItem;
     NavigationMenu: TMenuItem;
+    OpenDialog1: TOpenDialog;
     Panel3: TPanel;
     Panel4: TPanel;
     QuaterniusBuildingsMenu: TMenuItem;
@@ -52,12 +54,14 @@ type
     procedure ComboBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
+    procedure LoadFileMenuClick(Sender: TObject);
     procedure MedievalFantasyBookMenuClick(Sender: TObject);
     procedure NavigationMenuClick(Sender: TObject);
     procedure QuaterniusBuildingsMenuClick(Sender: TObject);
     procedure QuaterniusPropsMenuClick(Sender: TObject);
     procedure WindowMotion(Sender: TObject; const Event: TInputMotion);
     procedure WindowPress(Sender: TObject; const Event: TInputPressRelease);
+    procedure WindowUpdate(Sender: TObject);
     procedure YogYogMenuClick(Sender: TObject);
     procedure DebugBoxMenuClick(Sender: TObject);
     procedure RadioGroup1Click(Sender: TObject);
@@ -73,9 +77,9 @@ type
     procedure UpdateInfo(const AName: String; const AValue: Integer);
     procedure UpdateInfo(const AName: String; const AValue: Single);
     procedure UpdateInfo(const AName: String; const AValue: String);
-//    function  CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
     function  CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
     procedure LoadMenuScene(const AFileName: String);
+    function  Pos2DTo3D(const AXpos: Single; const AYpos: Single): String;
     procedure UpdateInfoPanel;
   public
     Scene: TCastleScene;
@@ -85,6 +89,7 @@ type
     gYAngle: Single;
     gSceneRot: Integer;
     gUsingShear: Boolean;
+    gViewportBackground: TVector4;
     SpriteSize: Integer;
   end;
 
@@ -172,13 +177,14 @@ procedure TForm1.WindowOpen(Sender: TObject);
 var
   ASize: Integer;
 begin
+  gViewportBackground := Vector4(1,1,1,1);
   TrackBar1.Position := 90;
 
   Viewport := TCastleViewport.Create(Application);
+  Viewport.BackgroundColor := gViewportBackground;
   Viewport.FullSize := True;
   Viewport.AutoCamera := False;
   Viewport.Setup2D;
-  Viewport.Transparent := True;
   Viewport.NavigationType := ntNone;
   Viewport.AssignDefaultCamera;
   Viewport.Camera.Orthographic.Width := 2;
@@ -207,6 +213,8 @@ begin
 
   infoNotifications := TCastleNotifications.Create(Application);
   infoNotifications.MaxMessages := 1;
+  infoNotifications.Color := Vector4(0,0,0,1);
+  infoNotifications.OutlineColor := Vector4(1,1,1,1);
   infoNotifications.Anchor(hpLeft, 10);
   infoNotifications.Anchor(vpBottom, 10);
   Window.Controls.InsertFront(infoNotifications);
@@ -225,7 +233,12 @@ begin
   AddInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
   AddInfo('Translation', Scene.Translation.ToString);
   AddInfo('Center', Scene.Center.ToString);
+  AddInfo('Rotation', Scene.Rotation.ToString);
   AddInfo('3D Scale', Scene.Scale.ToString);
+
+  AddInfo('Pos A', Pos2DTo3D(0, 0));
+  AddInfo('Pos B', Pos2DTo3D(Window.Width, Window.Height));
+  AddInfo('Mouse', 'Unknown');
 
   ComboBox1.Items.Clear;
   ASize := 32;
@@ -239,10 +252,22 @@ begin
 
 end;
 
+function TForm1.Pos2DTo3D(const AXpos: Single; const AYpos: Single): String;
+var
+  res: String;
+  PlanePosition: TVector3;
+begin
+  res := 'Unknown';
+  if Viewport.PositionToCameraPlane(Vector2(AXpos, AYpos), True, 0, PlanePosition) then
+    begin
+      res := PlanePosition.ToString;
+    end;
+
+  Result := res;
+end;
+
 procedure TForm1.UpdateInfoPanel;
 begin
-  Viewport.Camera.Orthographic.Scale := Viewport.Camera.Orthographic.Height / Viewport.Camera.Orthographic.Width;
-
   UpdateInfo('Window Width', Window.Width);
   UpdateInfo('Window Height', Window.Height);
   UpdateInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
@@ -252,12 +277,15 @@ begin
   UpdateInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
   UpdateInfo('Translation', Scene.Translation.ToString);
   UpdateInfo('Center', Scene.Center.ToString);
+  UpdateInfo('Rotation', Scene.Rotation.ToString);
   UpdateInfo('3D Scale', Scene.Scale.ToString);
+  UpdateInfo('Pos A', Pos2DTo3D(0, 0));
+  UpdateInfo('Pos B', Pos2DTo3D(Window.Width, Window.Height));
 end;
 
 procedure TForm1.WindowBeforeRender(Sender: TObject);
 begin
-  if not(Scene = nil) then
+  if (Viewport.NavigationType = ntNone) and not(Scene = nil) then
     begin
       ViewFromRadius(Sqrt(2), Vector3(-1, gYAngle, -1));
     end;
@@ -378,31 +406,14 @@ begin
   Viewport.Items.MainScene := Scene;
 end;
 
-procedure TForm1.QuaterniusBuildingsMenuClick(Sender: TObject);
+procedure TForm1.LoadFileMenuClick(Sender: TObject);
 begin
-  LoadMenuScene('castle-data:/Medieval_Village_Pack/Buildings/gltf/' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)]);
-  Caption := 'CubeExplorer : Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
-end;
-
-procedure TForm1.QuaterniusPropsMenuClick(Sender: TObject);
-begin
-  LoadMenuScene('castle-data:/Medieval_Village_Pack/Props/gltf/' + QuaterniusProps[Integer(TComponent(Sender).Tag)]);
-  Caption := 'CubeExplorer : Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
-end;
-
-procedure TForm1.WindowResize(Sender: TObject);
-begin
-  UpdateInfoPanel;
-end;
-
-procedure TForm1.WindowMotion(Sender: TObject; const Event: TInputMotion);
-begin
-  UpdateInfoPanel;
-end;
-
-procedure TForm1.WindowPress(Sender: TObject; const Event: TInputPressRelease);
-begin
-  UpdateInfoPanel;
+  OpenDialog1.Filter := '3D Models|*.gltf;*.glb;*.obj;';
+  if OpenDialog1.Execute then
+    begin
+      LoadMenuScene(OpenDialog1.Filename);
+      Caption := 'CubeExplorer : ' + OpenDialog1.Filename;
+    end;
 end;
 
 procedure TForm1.YogYogMenuClick(Sender: TObject);
@@ -417,6 +428,38 @@ begin
   Caption := 'CubeExplorer : Medieval Fantasy Book';
 end;
 
+procedure TForm1.QuaterniusBuildingsMenuClick(Sender: TObject);
+begin
+  LoadMenuScene('castle-data:/Medieval_Village_Pack/Buildings/gltf/' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)]);
+  Caption := 'CubeExplorer : Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
+end;
+
+procedure TForm1.QuaterniusPropsMenuClick(Sender: TObject);
+begin
+  LoadMenuScene('castle-data:/Medieval_Village_Pack/Props/gltf/' + QuaterniusProps[Integer(TComponent(Sender).Tag)]);
+  Caption := 'CubeExplorer : Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
+end;
+
+procedure TForm1.WindowResize(Sender: TObject);
+begin
+//  UpdateInfoPanel;
+end;
+
+procedure TForm1.WindowMotion(Sender: TObject; const Event: TInputMotion);
+begin
+  UpdateInfo('Mouse', Pos2DTo3D(Event.Position.X, Event.Position.Y));
+end;
+
+procedure TForm1.WindowPress(Sender: TObject; const Event: TInputPressRelease);
+begin
+//  UpdateInfoPanel;
+end;
+
+procedure TForm1.WindowUpdate(Sender: TObject);
+begin
+  UpdateInfoPanel;
+end;
+
 procedure TForm1.NavigationMenuClick(Sender: TObject);
 begin
   if Viewport.NavigationType = ntNone then
@@ -426,6 +469,8 @@ begin
     end
   else
     begin
+      if Viewport.Navigation is TCastleExamineNavigation then
+        (Viewport.Navigation as TCastleExamineNavigation).StopRotating;
       Viewport.NavigationType := ntNone;
       NavigationMenu.Checked := False;
     end;
@@ -505,67 +550,6 @@ begin
       Viewport.Camera.Position  := Spherical;
     end;
 end;
-
-{
-function TForm1.CreateSpriteTexture(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
-var
-  SourceViewport: TCastleViewport;
-  RenderToTexture: TGLRenderToTexture;
-  GrabScene: TCastleScene;
-  ViewportRect: TRectangle;
-begin
-  SourceViewport := nil;
-  RenderToTexture := nil;
-
-  if not(Scene = nil) and (TextureWidth > 0) and (TextureHeight > 0) then
-    begin
-      try
-        try
-          GrabScene := SourceScene.Clone(nil);
-
-          SourceViewport := TCastleViewport.Create(nil);
-          SourceViewport.Width := TextureWidth;
-          SourceViewport.Height := TextureHeight;
-          SourceViewport.BackgroundColor := Vector4(1,1,1,1);
-
-          SourceViewport.Setup2D;
-          SourceViewport.Camera.ProjectionType := ptOrthographic;
-          SourceViewport.Camera.Orthographic.Origin := Viewport.Camera.Orthographic.Origin;
-          SourceViewport.Camera.Up := Viewport.Camera.Up;
-          SourceViewport.Camera.Direction := Viewport.Camera.Direction;
-          SourceViewport.Camera.Position  := Viewport.Camera.Position;
-          SourceViewport.Camera.Orthographic.Scale := Min(
-            Viewport.Camera.Orthographic.EffectiveWidth / TextureWidth,
-            Viewport.Camera.Orthographic.EffectiveHeight / TextureHeight);
-
-          SourceViewport.Items := ViewPort.Items;
-
-          RenderToTexture := TGLRenderToTexture.Create(TextureWidth, TextureHeight);
-          RenderToTexture.Buffer := tbNone;
-          RenderToTexture.GLContextOpen;
-          RenderToTexture.RenderBegin;
-
-          ViewportRect := Rectangle(0, 0, TextureWidth, TextureHeight);
-
-          Window.Container.RenderControl(SourceViewport, ViewportRect);
-
-          Result := SaveScreen_NoFlush(TRGBImage, ViewportRect, RenderToTexture.ColorBuffer);
-
-          RenderToTexture.RenderEnd;
-        except
-          on E : Exception do
-            begin
-              ShowMessage(E.ClassName + LineEnding + E.Message);
-            end;
-        end;
-      finally
-        FreeAndNil(RenderToTexture);
-        FreeAndNil(GrabScene);
-        FreeAndNil(SourceViewport);
-      end;
-    end;
-end;
-}
 
 function TForm1.CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
 var

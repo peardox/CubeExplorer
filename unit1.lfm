@@ -1,10 +1,10 @@
 object Form1: TForm1
   Left = 917
-  Height = 500
-  Top = 245
+  Height = 562
+  Top = 183
   Width = 805
   Caption = 'CubeExplorer'
-  ClientHeight = 480
+  ClientHeight = 542
   ClientWidth = 805
   Menu = MainMenu1
   OnCreate = FormCreate
@@ -12,18 +12,18 @@ object Form1: TForm1
   LCLVersion = '2.0.10.0'
   object Panel1: TPanel
     Left = 0
-    Height = 480
+    Height = 542
     Top = 0
     Width = 300
     Align = alLeft
     BevelOuter = bvNone
     Caption = 'Panel1'
-    ClientHeight = 480
+    ClientHeight = 542
     ClientWidth = 300
     TabOrder = 0
     object ListView1: TListView
       Left = 0
-      Height = 307
+      Height = 369
       Top = 23
       Width = 300
       Align = alClient
@@ -46,7 +46,7 @@ object Form1: TForm1
     object Panel2: TPanel
       Left = 0
       Height = 150
-      Top = 330
+      Top = 392
       Width = 300
       Align = alBottom
       BevelOuter = bvNone
@@ -131,24 +131,24 @@ object Form1: TForm1
   end
   object Splitter1: TSplitter
     Left = 300
-    Height = 480
+    Height = 542
     Top = 0
     Width = 5
   end
   object Panel3: TPanel
     Left = 305
-    Height = 480
+    Height = 542
     Top = 0
     Width = 500
     Align = alClient
     BevelOuter = bvNone
     Caption = 'Panel3'
-    ClientHeight = 480
+    ClientHeight = 542
     ClientWidth = 500
     TabOrder = 2
     object Window: TCastleControlBase
       Left = 0
-      Height = 451
+      Height = 513
       Top = 0
       Width = 500
       Align = alClient
@@ -159,11 +159,12 @@ object Form1: TForm1
       OnResize = WindowResize
       OnPress = WindowPress
       OnMotion = WindowMotion
+      OnUpdate = WindowUpdate
     end
     object Panel4: TPanel
       Left = 0
       Height = 29
-      Top = 451
+      Top = 513
       Width = 500
       Align = alBottom
       Caption = 'Panel4'
@@ -199,6 +200,10 @@ object Form1: TForm1
     Top = 72
     object FileMenu: TMenuItem
       Caption = '&File'
+      object LoadFileMenu: TMenuItem
+        Caption = '&Load'
+        OnClick = LoadFileMenuClick
+      end
       object QuaterniusMenu: TMenuItem
         Caption = '&Quaternius'
         object QuaterniusBuildingsMenu: TMenuItem
@@ -225,5 +230,10 @@ object Form1: TForm1
         OnClick = NavigationMenuClick
       end
     end
+  end
+  object OpenDialog1: TOpenDialog
+    Title = 'Load model'
+    Left = 190
+    Top = 129
   end
 end
