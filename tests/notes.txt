@@ -2,7 +2,7 @@
 45 - 0.707 = 320 / 698 = tan 0.45845272206
 60 - 0.866 = 366 / 698 = tan 0.52435530086
 90 - 1.000
-     2.000 = 517 / 636 = tan 0.81289308176
+     2.000 = 517 / 636 = tan 0.81289308176 - 11.42 / 78.588
 
 1600 * 0.81289308176
 
@@ -34,3 +34,150 @@ Top - 4096 - 764
 Width - 2886
 Height - 2354
 Depth - 212
+
+'C:\Program Files\Blender Foundation\Blender 2.92\blender.exe' 'C:\Assets\Zerin Labs\Retro-Village-EnviroKit\fbx\deco_barley.FBX'
+
+ 0,  2, -1 = S
+-1,  2, -1 = SW
+-1,  2,  0 = W
+-1,  2,  1 = NW
+ 0,  2,  1 = N
+ 1,  2,  1 = NE
+ 1,  2,  0 = E
+ 1,  2, -1 = SE
+
+Red   #FF003F - #00FFC0 - X
+Green #00FF3F - #FF00C0 - Y
+Blue  #003FFF - #FFC000 - Z
+
+
+Public	property Direction: TVector3 read GetDirection write SetDirection;
+Public	property ProjectionRectangle: TVector4 read GetProjectionRectangle write SetProjectionRectangle;
+Public	property ProjectionLocation: TVector3 read GetProjectionLocation write SetProjectionLocation;
+
+Where can I find documentation for ProjectionRectangle and ProjectionLocation for TDirectionalLightNode? I'm trying to work out lighting and shadows
+
+78.58
+
+1024 = 92 - 840 - 92 (W)
+1024 = 341 - 342 - 341 (H)
+
+16384 = 1572 - 13240 - 1572 (W) = 10810.66666
+16384 = 82 - 16220 - 82 (H) =  3 x 5406.66666 - 10813.33333
+
+10813.333333333 / 13240 = 0.81671701913
+
+16384 * 0.81671701913
+0.81666666666666666666666666666
+
+Retro Dungeons : Treacherous Traps
+https://assetstore.unity.com/packages/3d/environments/dungeons/retro-dungeons-treacherous-traps-191326
+https://www.gamedevmarket.net/member/zerinlabs/
+
+5440 / 6663 = 0.81644904697
+
+arcsin ( 1 / sqrt(3)) = 0.615479709
+800, 6232
+4096, 7548
+7548 - 6232 = 1316 / 3296 = 0.39927184466
+
+800, 5980 = 1
+4096, 7902
+7902 - 5980 / 1922 / 3296 = 0.58313106796
+
+sudo /usr/libexec/locate.updatedb
+
+xcode-select --install
+xcode-select --license
+git config --global user.email simon@peardox.com
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install svn
+git clone https://github.com/castle-engine/castle-engine.git
+git clone https://github.com/bgrabitmap/bgrabitmap.git
+git clone https://github.com/bgrabitmap/bgracontrols.git
+git clone https://github.com/peardox/Spritely.git
+
+vim ~/.zshrc
+export CASTLE_ENGINE_PATH=/Users/simon/src/lib/castle-engine/
+export LANG=en_US.UTF-8
+
+sudo cp castle-engine /usr/local/bin
+sudo cp /Users/simon/fpcupdeluxe/fpc/bin/x86_64-darwin/fpc.cfg /etc/fpc.cfg
+sudo gem install cocoapods
+
+texCoord MultiTextureCoordinate {
+  texCoord TextureCoordinate {
+    mapping "TEXCOORD_0"
+    point [
+      0 1,
+      1 1,
+      0 0,
+      1 0,
+    ]
+  }
+}
+
+simon@Dell-Win10:/mnt/c/dev$ grep -lir PixelPtr | grep \\.pas
+DAEFrameUtils/MainUnit.pas
+DAEVideo/backup/maingameunit.pas
+DAEVideo/maingameunit.pas
+mesh/backup/maingameunit.pas
+mesh/maingameunit.pas
+play/Hover/backup/maingameunit.pas
+c:\play\Hover\maingameunit.pas
+play/SheetViewer/backup/guiinitialization.pas
+play/SheetViewer/backup/miscfunctions.pas
+play/SheetViewer/guiinitialization.pas
+play/SheetViewer/miscfunctions.pas
+
+git clone https://github.com/gogs/gogs.git
+cd gogs
+mysqladmin -uwebapp -pballyh00 create gogs
+mysql -uwebapp -pballyh00 gogs < scripts/mysql.sql
+
+sudo su -l
+cd /usr/local
+wget https://golang.org/dl/go1.16.5.linux-amd64.tar.gz
+rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.5.linux-amd64.tar.gz
+rm go1.16.5.linux-amd64.tar.gz
+
+vim /etc/profile
+[Add]
+export PATH=$PATH:/usr/local/go/bin
+
+[Log out/in]
+go version
+
+sudo adduser --disabled-login --gecos 'Gogs' git
+cd gogs
+go build -o gogs
+./gogs web
+
+sudo apt-get install libpam0g-dev
+go build -tags "pam cert" -o gogs
+./gogs web
+
+=======================================
+
+sudo apt install -y \
+  apache2 \
+  libapache2-mod-php \
+  openssl \
+  php-imagick php-common php-curl \
+  php-gd php-imap php-intl \
+  php-json php-mbstring php-mysql \
+  php-ssh2 php-xml php-zip \
+  php-apcu php-redis redis-server \
+  wget
+  
+sudo apt install -y \
+  ssh bzip2 sudo cron rsync curl jq \
+  inetutils-ping smbclient coreutils php-ldap
+  
+[php-smbclient]
+sudo apt install php-pear php7.4-dev libsmbclient-dev
+sudo pecl channel-update pecl.php.net
+sudo pecl install smbclient
+
+You should add "extension=/usr/lib/php/20190902/smbclient.so" to php.ini
+sudo vim /etc/php/7.4/apache2/php.ini

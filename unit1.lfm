@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 917
+  Left = 864
   Height = 562
-  Top = 183
+  Top = 107
   Width = 805
   Caption = 'CubeExplorer'
   ClientHeight = 542
@@ -57,7 +57,7 @@ object Form1: TForm1
       object RadioGroup1: TRadioGroup
         Left = 0
         Height = 94
-        Top = 6
+        Top = -19
         Width = 300
         Align = alBottom
         AutoFill = True
@@ -96,7 +96,7 @@ object Form1: TForm1
       object TrackBar1: TTrackBar
         Left = 0
         Height = 25
-        Top = 100
+        Top = 75
         Width = 300
         Max = 3600
         OnChange = TrackBar1Change
@@ -108,13 +108,23 @@ object Form1: TForm1
       object Button1: TButton
         Left = 0
         Height = 25
-        Top = 125
+        Top = 100
         Width = 300
         Align = alBottom
         Caption = 'Save Image To File'
         OnClick = Button1Click
         TabOrder = 2
         TabStop = False
+      end
+      object Button4: TButton
+        Left = 0
+        Height = 25
+        Top = 125
+        Width = 300
+        Align = alBottom
+        Caption = 'Animate Sprite'
+        OnClick = Button4Click
+        TabOrder = 3
       end
     end
     object ComboBox1: TComboBox
@@ -220,6 +230,11 @@ object Form1: TForm1
       object YogYogMenu: TMenuItem
         Caption = 'Yogyog &Castle'
         OnClick = YogYogMenuClick
+      end
+      object CrockMenu: TMenuItem
+        Caption = '&Crock'
+        ShortCutKey2 = 32835
+        OnClick = CrockMenuClick
       end
       object DebugBoxMenu: TMenuItem
         Caption = '&DebugBox'

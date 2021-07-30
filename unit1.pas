@@ -1,6 +1,8 @@
 unit Unit1;
 
 {$mode objfpc}{$H+}
+ {$define usestage}
+ {$define skipcube}
 
 interface
 
@@ -11,7 +13,10 @@ uses
   CastleRenderOptions, CastleCameras, CastleVectors, CastleDebugTransform,
   CastleControls, CastleImages, CastleGLImages, CastleColors, CastleRectangles,
   CastleNotifications, CastleUIControls, CastleFilesUtils, CastleLCLUtils,
-  CastleGLUtils, CastleKeysMouse;
+  {$ifdef usestage}
+  Staging, CastleTransform,
+  {$endif}
+  CastleGLUtils, CastleQuaternions, CastleTimeUtils, CastleLog, CastleKeysMouse;
 
 type
   { TCastleSceneHelper }
@@ -27,12 +32,14 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    Button4: TButton;
     ComboBox1: TComboBox;
     ListView1: TListView;
     MainMenu1: TMainMenu;
     FileMenu: TMenuItem;
     MedievalFantasyBookMenu: TMenuItem;
     LoadFileMenu: TMenuItem;
+    CrockMenu: TMenuItem;
     NavigationMenu: TMenuItem;
     OpenDialog1: TOpenDialog;
     Panel3: TPanel;
@@ -51,11 +58,13 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
     procedure ComboBox1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure LoadFileMenuClick(Sender: TObject);
     procedure MedievalFantasyBookMenuClick(Sender: TObject);
+    procedure CrockMenuClick(Sender: TObject);
     procedure NavigationMenuClick(Sender: TObject);
     procedure QuaterniusBuildingsMenuClick(Sender: TObject);
     procedure QuaterniusPropsMenuClick(Sender: TObject);
@@ -77,11 +86,16 @@ type
     procedure UpdateInfo(const AName: String; const AValue: Integer);
     procedure UpdateInfo(const AName: String; const AValue: Single);
     procedure UpdateInfo(const AName: String; const AValue: String);
-    function  CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
-    procedure LoadMenuScene(const AFileName: String);
+    function  CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal; const isTransparent: Boolean = False): TCastleImage;
+    procedure LoadMenuScene(const AFileName: String; const AddToViewport: Boolean = True);
     function  Pos2DTo3D(const AXpos: Single; const AYpos: Single): String;
+    procedure StopMotion(const Anim: String; const FrameCount: Integer; const addWatermark: Boolean = True);
+    procedure NextDirection;
     procedure UpdateInfoPanel;
   public
+    {$ifdef usestage}
+    Stage: TCastleScene;
+    {$endif}
     Scene: TCastleScene;
     Viewport: TCastleViewport;
     Debug: TDebugTransformBox;
@@ -95,6 +109,7 @@ type
 
 var
   Form1: TForm1;
+  gOrientation: TVector4;
 
 const
   MaxSceneRot: Integer = 7;
@@ -126,6 +141,8 @@ begin
                              1 / BoundingBox.MaxSize,
                              1 / BoundingBox.MaxSize);
             Translation := -Center;
+            gOrientation := Vector4(0, 0, 0, 0);
+            Rotation := gOrientation;
           end;
       end;
     end;
@@ -190,9 +207,19 @@ begin
   Viewport.Camera.Orthographic.Width := 2;
   Viewport.Camera.Orthographic.Height := 2;
   Viewport.Camera.Orthographic.Origin := Vector2(0.5, 0.5);
-  Viewport.Camera.Orthographic.Scale := Viewport.Camera.Orthographic.Height / Viewport.Camera.Orthographic.Width;
+  Viewport.Camera.Orthographic.Scale := 1; // Viewport.Camera.Orthographic.Height / Viewport.Camera.Orthographic.Width;
   Viewport.Camera.ProjectionType := ptOrthographic;
 
+  {$ifdef usestage}
+  if not (Stage = nil) then
+    begin
+      FreeAndNil(Stage);
+    end;
+  {$endif}
+
+  {$ifdef skipcube}
+  CrockMenuClick(Sender);
+  {$else}
   Scene := TCastleScene.Create(Application);
   Scene.Setup2D;
   Scene.RenderOptions.MinificationFilter := minNearest;
@@ -200,6 +227,7 @@ begin
   Scene.PrimitiveGeometry := pgBox;
   Scene.Normalize;
   Caption := 'CubeExplorer : Default Cube';
+  {$endif}
 
   Debug := TDebugTransformBox.Create(Application);
   Debug.Parent := Scene;
@@ -207,12 +235,15 @@ begin
   Debug.Exists := False;
   DebugBoxMenu.Checked := Debug.Exists;
 
+  {$ifndef skipcube}
   Viewport.Items.Add(Scene);
   Viewport.Items.MainScene := Scene;
+  {$endif}
+
   Window.Controls.InsertFront(Viewport);
 
   infoNotifications := TCastleNotifications.Create(Application);
-  infoNotifications.MaxMessages := 1;
+  infoNotifications.MaxMessages := 2;
   infoNotifications.Color := Vector4(0,0,0,1);
   infoNotifications.OutlineColor := Vector4(1,1,1,1);
   infoNotifications.Anchor(hpLeft, 10);
@@ -227,6 +258,8 @@ begin
   AddInfo('Projection (Y Axis)', gYAngle);
   AddInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
   AddInfo('Ortho Height', Viewport.Camera.Orthographic.Height);
+  AddInfo('Ortho Effective Width', Viewport.Camera.Orthographic.EffectiveWidth);
+  AddInfo('Ortho Effective Height', Viewport.Camera.Orthographic.EffectiveHeight);
   AddInfo('Ortho Scale', Viewport.Camera.Orthographic.Scale);
 
   AddInfo('BBox 0', Scene.BoundingBox.Data[0].ToString);
@@ -258,7 +291,7 @@ var
   PlanePosition: TVector3;
 begin
   res := 'Unknown';
-  if Viewport.PositionToCameraPlane(Vector2(AXpos, AYpos), True, 0, PlanePosition) then
+  if Viewport.PositionToCameraPlane(Vector2(AXpos, AYpos), False, 0, PlanePosition) then
     begin
       res := PlanePosition.ToString;
     end;
@@ -272,6 +305,8 @@ begin
   UpdateInfo('Window Height', Window.Height);
   UpdateInfo('Ortho Width', Viewport.Camera.Orthographic.Width);
   UpdateInfo('Ortho Height', Viewport.Camera.Orthographic.Height);
+  UpdateInfo('Ortho Effective Width', Viewport.Camera.Orthographic.EffectiveWidth);
+  UpdateInfo('Ortho Effective Height', Viewport.Camera.Orthographic.EffectiveHeight);
   UpdateInfo('Ortho Scale', Viewport.Camera.Orthographic.Scale);
   UpdateInfo('BBox 0', Scene.BoundingBox.Data[0].ToString);
   UpdateInfo('BBox 1', Scene.BoundingBox.Data[1].ToString);
@@ -285,9 +320,9 @@ end;
 
 procedure TForm1.WindowBeforeRender(Sender: TObject);
 begin
-  if (Viewport.NavigationType = ntNone) and not(Scene = nil) then
+  if not(Scene = nil) then
     begin
-      ViewFromRadius(Sqrt(2), Vector3(-1, gYAngle, -1));
+      ViewFromRadius(2, Vector3(-1, gYAngle, -1));
     end;
 end;
 
@@ -298,7 +333,11 @@ var
 begin
   if not (Scene = nil) then
     begin
+      {$ifdef usestage}
+      Sprite := CreateSpriteImage(Stage, SpriteSize, SpriteSize, True);
+      {$else}
       Sprite := CreateSpriteImage(Scene, SpriteSize, SpriteSize);
+      {$endif}
       if not(Sprite = nil) then
         begin
           SName := FileNameAutoInc('grab_%4.4d.jpg');
@@ -310,25 +349,41 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
+var
+  Q: TQuaternion;
 begin
   if not(Scene = nil) then
     begin
       Dec(gSceneRot);
       if (gSceneRot < 0) then
         gSceneRot := MaxSceneRot;
-      Scene.Rotation := Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1)));
+      Q := QuatFromAxisAngle(gOrientation);
+      Q := Q * QuatFromAxisAngle(Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1))));
+      Scene.Rotation := Q.ToAxisAngle;
     end;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
+var
+  Q: TQuaternion;
 begin
   if not(Scene = nil) then
     begin
       Inc(gSceneRot);
       if (gSceneRot > MaxSceneRot) then
         gSceneRot := 0;
-      Scene.Rotation := Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1)));
+      Q := QuatFromAxisAngle(gOrientation);
+      Q := Q * QuatFromAxisAngle(Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1))));
+      Scene.Rotation := Q.ToAxisAngle;
     end;
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+begin
+  StopMotion('Walk_In_Place', 8, True); // 0.79
+//  StopMotion('WalkBackwards', 8); // 2.00
+//  StopMotion('Hit', 8); // 0.96
+//  StopMotion('Death', 8); // 1.67
 end;
 
 procedure TForm1.ComboBox1Change(Sender: TObject);
@@ -342,6 +397,7 @@ var
   AMenuItem: TMenuItem;
   Idx: Integer;
 begin
+  InitializeLog;
   for Idx := 0 to Length(QuaterniusBuildings) - 1 do
     begin
       AMenuItem:=TMenuItem.Create(QuaterniusBuildingsMenu);
@@ -362,6 +418,11 @@ begin
   gYAngle := -1;
   gUsingShear := False; // Placeholder - alter with shear when @michalis writes it
   gSceneRot := 0;
+  Scene := nil;
+  Debug := nil;
+  {$ifdef usestage}
+  Stage := nil;
+  {$endif}
   RadioGroup1.ItemIndex := 14;
   KeyPreview := True;
 end;
@@ -371,20 +432,34 @@ begin
   Panel4.Height := Button2.Height;
   Button2.Width := Trunc(Panel4.Width / 2);
   Button3.Width := Panel4.Width - Button2.Width;
+//  Panel3.Width := Panel3.Height - Panel4.Height;
 end;
 
-procedure TForm1.LoadMenuScene(const AFileName: String);
+procedure TForm1.LoadMenuScene(const AFileName: String; const AddToViewport: Boolean = True);
 var
   OldDebug: Boolean;
 begin
+  {$ifdef usestage}
+  if not (Stage = nil) then
+    begin
+      FreeAndNil(Stage);
+    end;
+  {$endif}
+
   if not (Scene = nil) then
     begin
-      OldDebug := Debug.Exists;
-      FreeAndNil(Debug);
+      if not (Debug = nil) then
+        begin
+          OldDebug := Debug.Exists;
+          FreeAndNil(Debug);
+        end;
       FreeAndNil(Scene);
     end;
   Scene := TCastleScene.Create(Application);
   Scene.Setup2D;
+  Scene.ReceiveShadowVolumes := True;
+  Scene.RenderOptions.PhongShading := True;
+  Scene.RenderOptions.ShadowSampling := ssSimple;
   Scene.RenderOptions.MinificationFilter := minNearest;
   Scene.RenderOptions.MagnificationFilter := magNearest;
   Scene.Load(AFileName);
@@ -402,8 +477,11 @@ begin
   Debug.Exists := OldDebug;
   DebugBoxMenu.Checked := Debug.Exists;
 
-  Viewport.Items.Add(Scene);
-  Viewport.Items.MainScene := Scene;
+  if AddToViewport then
+    begin
+      Viewport.Items.Add(Scene);
+      Viewport.Items.MainScene := Scene;
+    end;
 end;
 
 procedure TForm1.LoadFileMenuClick(Sender: TObject);
@@ -413,6 +491,13 @@ begin
     begin
       LoadMenuScene(OpenDialog1.Filename);
       Caption := 'CubeExplorer : ' + OpenDialog1.Filename;
+      {$ifdef usestage}
+      Stage := LoadStage(Scene);
+      Viewport.Items.UseHeadlight := hlOff;
+      Viewport.Items.MainScene := Stage;
+      Viewport.Items.Remove(Scene);
+      Viewport.Items.Add(Stage);
+      {$endif}
     end;
 end;
 
@@ -420,29 +505,157 @@ procedure TForm1.YogYogMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/oblique.glb');
   Caption := 'CubeExplorer : Yogyog Castle';
+  {$ifdef usestage}
+  Stage := LoadStage(Scene);
+  Viewport.Items.UseHeadlight := hlOff;
+  Viewport.Items.MainScene := Stage;
+  Viewport.Items.Remove(Scene);
+  Viewport.Items.Add(Stage);
+  {$endif}
 end;
 
 procedure TForm1.MedievalFantasyBookMenuClick(Sender: TObject);
 begin
-  LoadMenuScene('castle-data:/medieval_fantasy_book/scene.gltf');
+//  LoadMenuScene('castle-data:/medieval_fantasy_book/scene.gltf');
+  LoadMenuScene('C:\Assets\Self\up.glb');
+//  LoadMenuScene('C:\Assets\Sketchfab\alpha_wolf\scene.gltf');
   Caption := 'CubeExplorer : Medieval Fantasy Book';
+  {$ifdef usestage}
+  Stage := LoadStage(Scene, -0.25);
+  Viewport.Items.UseHeadlight := hlOff;
+  Viewport.Items.MainScene := Stage;
+  Viewport.Items.Remove(Scene);
+  Viewport.Items.Add(Stage);
+  {$endif}
+end;
+
+procedure TForm1.CrockMenuClick(Sender: TObject);
+const
+  offWhite: Single = 1.0;
+begin
+//  LoadMenuScene('C:\Assets\Sketchfab\crocodile_with_animation\crockrotate.glb');
+//  LoadMenuScene('C:\Assets\3drt\paid\Dragon-boss\DragonBoss.glb');
+//  LoadMenuScene('C:\Assets\RPG Characters - Nov 2020\GLTF\GroupShotPeardox.glb', False);
+  LoadMenuScene('C:\Assets\Sketchfab\alpha_wolf\scene.gltf');
+  {$ifdef usestage}
+  Stage := LoadStage(Scene, 0, Vector3(offWhite, offWhite, offWhite));
+  Stage.PrepareResources([prSpatial, prRenderSelf, prRenderClones, prScreenEffects],
+      True,
+      Viewport.PrepareParams);
+
+  Viewport.Items.UseHeadlight := hlOff;
+  Viewport.Items.MainScene := Stage;
+
+  Viewport.Items.Add(Stage);
+  {$endif}
+  Caption := 'CubeExplorer : Crock';
+  Viewport.Camera.Orthographic.Scale := 0.52;
+//  Scene.TimePlayingSpeed := 0.1;
+//  Scene.PlayAnimation('Armature|Howl', True, True);
+    Scene.ForceAnimationPose('Armature|Howl', 0, False, True);
+    Scene.StopAnimation;
+//  Scene.Normalize;
+end;
+
+procedure TForm1.NextDirection;
+var
+  Q: TQuaternion;
+begin
+  if not(Scene = nil) then
+    begin
+      Dec(gSceneRot);
+      if (gSceneRot < 0) then
+        gSceneRot := MaxSceneRot;
+      Q := QuatFromAxisAngle(gOrientation);
+      Q := Q * QuatFromAxisAngle(Vector4(0, 1, 0, 2 * Pi * (gSceneRot / (MaxSceneRot + 1))));
+      Scene.Rotation := Q.ToAxisAngle;
+    end;
+end;
+
+procedure TForm1.StopMotion(const Anim: String; const FrameCount: Integer; const addWatermark: Boolean = True);
+var
+  Frame: Integer;
+  Angle: Integer;
+  Watermark: TCastleImage;
+  Sprite: TCastleImage;
+  TextureAtlas: TCastleImage;
+  ProcTimer: Int64;
+const
+  TestSize: Integer = 2048;
+  AngleCount: Integer = 8;
+begin
+  ProcTimer := CastleGetTickCount64;
+  Scene.StopAnimation;
+
+  TextureAtlas := TRGBAlphaImage.Create(TestSize, TestSize);
+  Watermark := LoadImage('castle-data:/NoWatermark.png', [TRGBAlphaImage]) as TRGBAlphaImage;
+
+  for Angle := 0 to AngleCount - 1 do
+    begin
+      NextDirection;
+      for Frame := 0 to FrameCount - 1 do
+        begin
+          Scene.ForceAnimationPose(Anim, (Frame / FrameCount) * Scene.AnimationDuration(Anim), False, True);
+          Scene.StopAnimation;
+          if AddWatermark then
+            Sprite := CreateSpriteImage(Scene, TestSize, TestSize, True)
+          else
+            Sprite := CreateSpriteImage(Scene, TestSize, TestSize, False);
+          if not(Sprite = nil) then
+            begin
+              Sprite.Resize(TestSize div 8, TestSize div 8, riLanczos);
+              if AddWatermark then
+                TextureAtlas.DrawFrom(Watermark, Frame * TestSize div 8, Angle * TestSize div 8, 0, 0, TestSize div 8, TestSize div 8, dmOverwrite);
+              TextureAtlas.DrawFrom(Sprite, Frame * TestSize div 8, Angle * TestSize div 8, 0, 0, TestSize div 8, TestSize div 8, dmBlendSmart);
+              FreeAndNil(Sprite);
+            end;
+        end;
+    end;
+  SaveImage(TextureAtlas, Anim + '.png');
+  FreeAndNil(TextureAtlas);
+  FreeAndNil(Watermark);
+
+  ProcTimer := CastleGetTickCount64 - ProcTimer;
+  infoNotifications.Show('Saved : ' + Anim);
+  infoNotifications.Show('Animation time = ' + FormatFloat('####0.000', ProcTimer / 1000) + ' seconds');
+
 end;
 
 procedure TForm1.QuaterniusBuildingsMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/Medieval_Village_Pack/Buildings/gltf/' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)]);
   Caption := 'CubeExplorer : Buildings : ' + QuaterniusBuildings[Integer(TComponent(Sender).Tag)];
+  {$ifdef usestage}
+  Stage := LoadStage(Scene);
+  Viewport.Items.UseHeadlight := hlOff;
+  Viewport.Items.MainScene := Stage;
+  Viewport.Items.Remove(Scene);
+  Viewport.Items.Add(Stage);
+  {$endif}
 end;
 
 procedure TForm1.QuaterniusPropsMenuClick(Sender: TObject);
 begin
   LoadMenuScene('castle-data:/Medieval_Village_Pack/Props/gltf/' + QuaterniusProps[Integer(TComponent(Sender).Tag)]);
   Caption := 'CubeExplorer : Props : ' + QuaterniusProps[Integer(TComponent(Sender).Tag)];
+  {$ifdef usestage}
+  Stage := LoadStage(Scene);
+  Viewport.Items.UseHeadlight := hlOff;
+  Viewport.Items.MainScene := Stage;
+  Viewport.Items.Remove(Scene);
+  Viewport.Items.Add(Stage);
+  {$endif}
 end;
 
 procedure TForm1.WindowResize(Sender: TObject);
 begin
-//  UpdateInfoPanel;
+  {
+  Viewport.Camera.Orthographic.Scale := Min(
+            Viewport.Camera.Orthographic.EffectiveWidth / Window.Width,
+            Viewport.Camera.Orthographic.EffectiveHeight / Window.Height);
+
+  UpdateInfoPanel;
+  }
 end;
 
 procedure TForm1.WindowMotion(Sender: TObject; const Event: TInputMotion);
@@ -521,7 +734,7 @@ begin
          8: gYAngle := -Pi / 3;
          9: gYAngle := -Pi / 4;
         10: gYAngle := -Pi / 5;
-        11: gYAngle := -Pi / 6;
+        11: gYAngle := -Sqrt(2);
       end;
     end;
 
@@ -551,7 +764,7 @@ begin
     end;
 end;
 
-function TForm1.CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal): TCastleImage;
+function TForm1.CreateSpriteImage(const SourceScene: TCastleScene; const TextureWidth: Cardinal; const TextureHeight: Cardinal; const isTransparent: Boolean = False): TCastleImage;
 var
   SourceViewport: TCastleViewport;
   GrabScene: TCastleScene;
@@ -572,7 +785,10 @@ begin
           SourceViewport := TCastleViewport.Create(nil);
           SourceViewport.Width := TextureWidth;
           SourceViewport.Height := TextureHeight;
-          SourceViewport.BackgroundColor := Vector4(1,1,1,1);
+          if isTransparent then
+            SourceViewport.Transparent := True
+          else
+            SourceViewport.BackgroundColor := Vector4(1,1,1,1);
 
           SourceViewport.Setup2D;
           SourceViewport.Camera.ProjectionType := ptOrthographic;
@@ -584,7 +800,7 @@ begin
             Viewport.Camera.Orthographic.EffectiveWidth / TextureWidth,
             Viewport.Camera.Orthographic.EffectiveHeight / TextureHeight);
 
-          SourceViewport.Camera.Orthographic.Scale := SourceViewport.Camera.Orthographic.Scale / 1.6;
+          WriteLnLog('Scale : ' + FloatToStr(SourceViewport.Camera.Orthographic.Scale));
 
           SourceViewport.Items := ViewPort.Items;
           ViewportRect := Rectangle(0, 0, TextureWidth, TextureHeight);

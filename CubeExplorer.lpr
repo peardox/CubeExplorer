@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, Unit1, runtimetypeinfocontrols, castle_components
+  Forms, Unit1, runtimetypeinfocontrols, castle_components, staging
   { you can add units after this };
 
 {$R *.res}
